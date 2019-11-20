@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="UTF-8"?>
+
+<mule xmlns:validation="http://www.mulesoft.org/schema/mule/validation" xmlns:ee="http://www.mulesoft.org/schema/mule/ee/core"
+	xmlns:cloudhub="http://www.mulesoft.org/schema/mule/cloudhub"
+	xmlns:http="http://www.mulesoft.org/schema/mule/http" xmlns="http://www.mulesoft.org/schema/mule/core" xmlns:doc="http://www.mulesoft.org/schema/mule/documentation" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.mulesoft.org/schema/mule/core http://www.mulesoft.org/schema/mule/core/current/mule.xsd
+http://www.mulesoft.org/schema/mule/http http://www.mulesoft.org/schema/mule/http/current/mule-http.xsd
+http://www.mulesoft.org/schema/mule/cloudhub http://www.mulesoft.org/schema/mule/cloudhub/current/mule-cloudhub.xsd
+http://www.mulesoft.org/schema/mule/ee/core http://www.mulesoft.org/schema/mule/ee/core/current/mule-ee.xsd
+http://www.mulesoft.org/schema/mule/validation http://www.mulesoft.org/schema/mule/validation/current/mule-validation.xsd">
+	<http:listener-config name="HTTP_Listener_config" doc:name="HTTP Listener config" doc:id="ec2d69b8-a26f-459a-a2fe-f11676ebf8da" >
+		<http:listener-connection host="0.0.0.0" port="8081" />
+	</http:listener-config>
+	<cloudhub:config name="CloudHub_Config" doc:name="CloudHub Config" doc:id="870d488b-dd46-4ef7-b35f-6b1a9c37e6e4" >
+		<cloudhub:connection username="jagrutipatil8008" password="Kailasha@25" environment="4d5c9fd2-ffc9-43ff-80e2-966e7e2eb49a"/>
+	</cloudhub:config>
+	<flow name="cloudhub_connectorFlow" doc:id="bd7baaee-4123-4cb2-9a38-69ce6f54dec1" >
+	
+		<http:listener doc:name="Listener" doc:id="7ee17547-d63e-4d46-bc11-c86181effb94" config-ref="HTTP_Listener_config" path="/cloud"/>
+		<validation:is-number numberType="INTEGER" doc:name="Is number" doc:id="a6bcd6c6-3776-44ce-ae4d-0a95b3bf99cc" value='#["abdj"]' message='#["Error"]'/>
+		<logger level="INFO" doc:name="Logger" doc:id="352bc42a-9675-4418-8dc9-503f2594eb1f" message="#[payload]"/>
+		<error-handler >
+			<on-error-propagate enableNotifications="true" logException="true" doc:name="On Error Propagate" doc:id="6a00d5ab-14a4-4353-a236-3241759bfe09" >
+				<logger level="INFO" doc:name="Logger" doc:id="167985af-d840-47d3-9944-9297b0f9d182" message="#[error.detailedDescription]"/>
+				<ee:transform doc:name="Transform Message" doc:id="a78873ab-b358-40ba-9391-8c281f5dc6d2">
+			<ee:message>
+				<ee:set-payload><![CDATA[%dw 2.0
+output application/json
+---
+{
+	Description:error.detailedDescription,
+	errorType: error.errorType
+	}]]></ee:set-payload>
+			</ee:message>
+		</ee:transform>
+				<cloudhub:create-notification doc:name="Create Notification" doc:id="c28bdb43-73c2-4d6f-88e8-c1b985ff2088" config-ref="CloudHub_Config" domain="cloudhub-connector-123" priority="INFO">
+					<cloudhub:message ><![CDATA[#["[Hello Jagruti]" ++ write(payload,"application/json")]]]></cloudhub:message>
+				</cloudhub:create-notification>
+				<logger level="INFO" doc:name="Logger" doc:id="ffe8f83d-1f96-4608-a62c-6e0d8144e5b6" message='"Message"'/>
+			</on-error-propagate>
+		</error-handler>
+		
+	</flow>
+</mule>
